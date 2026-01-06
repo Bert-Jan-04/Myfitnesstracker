@@ -1,4 +1,3 @@
-cat << 'EOF' > app.py
 from flask import Flask, render_template
 import sqlite3
 import os
@@ -19,7 +18,7 @@ def get_db_connection():
 def init_db():
     """
     Maakt database.db aan en vult 'm met vaste data via data/seed.sql.
-    Dit is nodig op Render, omdat database.db niet in GitHub staat.
+    Nodig op Render, omdat database.db niet in GitHub staat.
     """
     if not os.path.exists(SEED_PATH):
         return
@@ -45,4 +44,3 @@ def home():
 
 if __name__ == "__main__":
     app.run(debug=True)
-EOF
