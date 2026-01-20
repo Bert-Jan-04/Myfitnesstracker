@@ -23,7 +23,11 @@ from routes.auth_routes import bp as auth_bp
 
 # Aanmaken van de Flask-app
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
+app.secret_key = os.environ.get("SECRET_KEY", "bert-jan-key-2026")
+
+app.config["SESSION_COOKIE_SECURE"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
 
 # 1x uitvoeren bij opstarten
 init_db()
