@@ -43,7 +43,7 @@
 
           <!--
             Zoekveld:
-            - Filtert oefeningen via /workouts/api/exercises (JS hieronder)
+            - Filtert oefeningen via /api/exercises
             - autocomplete uit om “rare” browser suggesties te voorkomen
           -->
           <input
@@ -167,8 +167,8 @@
   }
 
   async function fetchExercises(q) {
-    const url = q ? `/workouts/api/exercises?q=${encodeURIComponent(q)}` : `/workouts/api/exercises`;
-    const res = await fetch(url, { headers: { "Accept": "application/json" } });
+    const url = q ? `/api/exercises?q=${encodeURIComponent(q)}` : `/api/exercises`;
+    const res = await fetch(url, { credentials: "include", headers: { "Accept": "application/json" } });
     if (!res.ok) return;
     const data = await res.json();
     setOptions(data.results);
