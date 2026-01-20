@@ -45,7 +45,7 @@
         <div class="value">—</div>
         <div class="muted">Stel eerst je kcal-doel in (dan zie je hier je voortgang).</div>
 
-         <!--
+        <!--
           Formulier om kcal-doel op te slaan
           - POST naar een route die het doel opslaat in het account/profiel
           - next zorgt dat je na opslaan weer terugkomt op het dashboard
@@ -100,7 +100,7 @@
       </div>
     </div>
 
-     <!--
+    <!--
       KPI 3: Workouts deze week
       - workouts_this_week wordt in de backend berekend (per user)
       - Op de frontend alleen tonen als overzicht
@@ -113,7 +113,64 @@
 
   </div>
 
-    <!--
+  <!-- =========================
+       🍽️ Gerechten van de dag
+       ========================= -->
+  <div class="card">
+    <h2>🍽️ Gerechten van de dag</h2>
+    <p class="muted" style="margin-top:-6px;">3 suggesties op basis van een externe recepten-API.</p>
+
+    {% if recipes_of_day and recipes_of_day|length > 0 %}
+      <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+        {% for r in recipes_of_day %}
+          <div class="card" style="padding:12px;">
+            <div style="font-weight:700; margin-bottom:8px;">
+              {{ r["strMeal"] }}
+            </div>
+
+            {% if r["strMealThumb"] %}
+              <img
+                src="{{ r['strMealThumb'] }}"
+                alt="{{ r['strMeal'] }}"
+                style="width:100%; border-radius:12px; margin-bottom:10px;"
+              >
+            {% endif %}
+
+            <div class="muted" style="margin-bottom:10px;">
+              {{ r["strArea"] or "Onbekend" }} • {{ r["strCategory"] or "Recept" }}
+            </div>
+
+            <div class="actions" style="margin-top:0;">
+              {# ALTijd werkende link: zoek op naam in je receptenpagina #}
+              <a class="btn primary" href="{{ url_for('recipes.recipes', q=r['strMeal']) }}">
+                Bekijk →
+              </a>
+
+              {# Optioneel: als jij een detail-route hebt, kun je deze aanzetten #}
+              {# 
+              {% if r["idMeal"] %}
+                <a class="btn" href="{{ url_for('recipes.recipe_detail', meal_id=r['idMeal']) }}">Detail</a>
+              {% endif %}
+              #}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="actions" style="margin-top: 12px;">
+        <a class="btn" href="{{ url_for('recipes.recipes') }}">Meer recepten zoeken</a>
+      </div>
+    {% else %}
+      <p class="muted" style="margin:0;">
+        Geen suggesties beschikbaar (API tijdelijk niet bereikbaar).
+      </p>
+      <div class="actions" style="margin-top: 12px;">
+        <a class="btn" href="{{ url_for('recipes.recipes') }}">Naar receptenpagina</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!--
     Recente workouts
     - Tabel wordt dynamisch gevuld met recent_workouts (uit de database)
     - Elke rij is klikbaar naar de detailpagina van de workout
@@ -186,7 +243,7 @@
     {% endif %}
   </div>
 
- <!--
+  <!--
     Externe library:
     - Chart.js wordt via CDN geladen om grafieken te kunnen tekenen
     Bron:
@@ -212,7 +269,7 @@
 
     const ctxDash = document.getElementById("weightChartDashboard");
 
-// Simpele lijn-grafiek voor progressie (dashboard overzicht)
+    // Simpele lijn-grafiek voor progressie (dashboard overzicht)
     new Chart(ctxDash, {
       type: "line",
       data: {
