@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Inloggen</h1>
+<p class="lead">Log in om je data te bekijken en op te slaan.</p>
+<!--
+  Login card:
+  - Compact gehouden voor focus op de actie
+  - max-width zorgt voor goede leesbaarheid
+  - Bron: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input
+-->
+
+<div class="card" style="max-width: 520px;">
+  <form method="post">
+
+    <label>E-mail</label>
+    <input
+      name="email"
+      type="email"
+      placeholder="jouw@email.com"
+      required
+    >
+
+    <div style="margin-top: 12px;">
+      <label>Wachtwoord</label>
+      <!--
+        type="password":
+        - Tekens worden verborgen
+        - Veiligere invoer op de frontend
+      -->
+      <input
+        name="password"
+        type="password"
+        placeholder="••••••••"
+        required
+      >
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" type="submit">
+        Inloggen
+      </button>
+
+       <!-- Navigatie naar registratiepagina via blueprint -->
+      <a class="btn" href="{{ url_for('auth.register') }}">
+        Registreren
+      </a>
+    </div>
+
+    <p style="margin: 14px 0 0; color: var(--muted); font-size: 13px;">
+		<!-- Extra call-to-action voor nieuwe gebruikers -->
+      Nog geen account?
+      <a
+        href="{{ url_for('auth.register') }}"
+        style="color: var(--accent);"
+      >
+        Maak er één aan
+      </a>.
+    </p>
+
+  </form>
+</div>
+
+{% endblock %}

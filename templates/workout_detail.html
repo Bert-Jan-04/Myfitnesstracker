@@ -1,0 +1,185 @@
+<!--
+  Bronnen:
+  - https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
+  - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
+  - https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout
+-->
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Terugknop naar overzicht -->
+<div class="actions" style="margin-top: 0; margin-bottom: 12px;">
+  <a class="btn" href="{{ url_for('workouts.workouts') }}">← Terug naar workouts</a>
+</div>
+
+<h1>Workout detail</h1>
+<!--
+  Samenvatting van de workout:
+  - Type + datum + (optioneel) notities
+-->
+<p class="lead">
+  <span class="stat-badge">{{ workout["workout_type"] }}</span>
+  &nbsp;•&nbsp; {{ workout["workout_date"] }}
+  {# Notities alleen tonen als ze bestaan #}
+  {% if workout["notes"] %}&nbsp;•&nbsp; {{ workout["notes"] }}{% endif %}
+</p>
+
+<div class="grid">
+
+ <!--
+    Oefening toevoegen:
+    - Form post naar route die de oefening aan deze workout koppelt
+    - Exercise dropdown wordt gevuld vanuit de backend (exercises)
+    - Zoekveld gebruikt JS + API endpoint om de lijst te filteren
+  -->
+  <div class="card">
+    <h2>➕ Oefening toevoegen</h2>
+
+    {# Form post naar route die de oefening aan deze workout koppelt #}
+    <form method="post" action="{{ url_for('workouts.workout_add_exercise', workout_id=workout['id']) }}">
+      <div class="row">
+        <div>
+          <label>Oefening</label>
+
+          <!--
+            Zoekveld:
+            - Filtert oefeningen via /workouts/api/exercises (JS hieronder)
+            - autocomplete uit om “rare” browser suggesties te voorkomen
+          -->
+          <input
+            id="exerciseSearch"
+            type="text"
+            placeholder="Zoek oefening (bijv. bench, squat, row...)"
+            autocomplete="off"
+            style="margin-bottom:8px;"
+          />
+
+<!-- Dropdown met oefeningen (default lijst) -->
+          <select id="exerciseSelect" name="exercise_id" required>
+            {% for ex in exercises %}
+              <option value="{{ ex['id'] }}">{{ ex['name'] }}</option>
+            {% endfor %}
+          </select>
+
+          <p class="hint" style="margin-top:8px;">Kies hier je oefening.</p>
+        </div>
+
+        <div>
+          <label>Sets × Reps</label>
+           <!--
+            Invoer sets & reps:
+            - Minimaal 1 zodat je geen lege/0-set entries opslaat
+          -->
+          <div style="display:flex; gap:8px;">
+            <input name="sets" type="number" min="1" placeholder="Sets" required style="width:50%;">
+            <input name="reps" type="number" min="1" placeholder="Reps" required style="width:50%;">
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label>Gewicht (kg) (optioneel)</label>
+        <input name="weight" type="number" step="0.5" placeholder="Bijv. 70">
+      </div>
+
+      <div class="actions">
+        <button class="btn success" type="submit">✓ Voeg toe</button>
+        <a class="btn primary" href="{{ url_for('workouts.workouts') }}">Klaar</a>
+      </div>
+    </form>
+
+    <p class="hint" style="margin:10px 0 0 0;">
+      💡 Elke toevoeging wordt opgeslagen in <code>workout_exercises</code> en gekoppeld aan deze workout.
+    </p>
+  </div>
+
+  <!--
+    Overzicht oefeningen:
+    - items komt uit de backend (join tussen workout_exercises en exercises)
+    - Wordt in een tabel getoond als er entries zijn
+  -->
+  <div class="card">
+    <h2>📋 Oefeningen in deze workout</h2>
+
+    {% if items and items|length > 0 %}
+      <table>
+        <thead>
+          <tr>
+            <th>Oefening</th>
+            <th>Sets</th>
+            <th>Reps</th>
+            <th>Gewicht</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in items %}
+            <tr>
+              <td>{{ it["name"] }}</td>
+              <td>{{ it["sets"] }}</td>
+              <td>{{ it["reps"] }}</td>
+              <!-- Als weight leeg is (None), tonen ik een '-' -->
+              <td>{{ it["weight"] if it["weight"] is not none else "-" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted" style="margin:0;">Nog geen oefeningen toegevoegd. Voeg er links één toe 👈</p>
+    {% endif %}
+  </div>
+
+</div>
+
+<!--
+  JS zoekfunctie:
+  - Haalt oefeningen op via jouw Flask endpoint
+  - Debounce voorkomt dat er bij elke toetsaanslag meteen een request komt
+-->
+<script>
+  // Kleine zoekfunctie: haalt oefeningen op via jouw Flask API endpoint (/api/exercises)
+  const searchInput = document.getElementById("exerciseSearch");
+  const selectEl = document.getElementById("exerciseSelect");
+
+  let debounceTimer = null;
+
+  function setOptions(results) {
+    const current = selectEl.value;
+    selectEl.innerHTML = "";
+
+    if (!results || results.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Geen resultaten";
+      selectEl.appendChild(opt);
+      return;
+    }
+
+    for (const r of results) {
+      const opt = document.createElement("option");
+      opt.value = r.id;
+      opt.textContent = r.name;
+      selectEl.appendChild(opt);
+    }
+
+    // Als de huidige selectie nog bestaat, proberen die te behouden
+    const stillExists = [...selectEl.options].some(o => o.value === current);
+    if (stillExists) selectEl.value = current;
+  }
+
+  async function fetchExercises(q) {
+    const url = q ? `/workouts/api/exercises?q=${encodeURIComponent(q)}` : `/workouts/api/exercises`;
+    const res = await fetch(url, { headers: { "Accept": "application/json" } });
+    if (!res.ok) return;
+    const data = await res.json();
+    setOptions(data.results);
+  }
+
+  // Debounce: pas na 250ms typen een request doen (scheelt onnodige API-calls)
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value.trim();
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => fetchExercises(q), 250);
+  });
+</script>
+
+{% endblock %}

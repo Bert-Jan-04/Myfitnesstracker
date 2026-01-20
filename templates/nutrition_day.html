@@ -1,0 +1,207 @@
+<!--
+      Bronnen:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/date
+      - https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/confirm
+    -->
+
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Voeding – {{ day }}</h1>
+<p class="lead">Overzicht van wat je hebt gegeten en hoeveel je nog over hebt.</p>
+
+<div class="grid">
+  <div class="card">
+
+    <!--
+      Acties bovenaan:
+      - Snelle knoppen om producten toe te voegen of naar “vandaag” te gaan
+      - Date picker waarmee je direct naar een andere dag navigeert
+    -->
+    <div class="actions" style="justify-content: space-between; gap: 10px;">
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn" href="{{ url_for('nutrition.food_search') }}">+ Product toevoegen</a>
+        <a class="btn" href="{{ url_for('nutrition.nutrition_today') }}">Naar vandaag</a>
+      </div>
+
+      <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+        <div>
+          <label>Ga naar datum</label>
+          <!--
+            Bij datum-wijziging meteen naar /nutrition/<dag>
+            - Door url_for te gebruiken blijven routes consistent
+          -->
+          {# Bij datum-wijziging ga je meteen naar /nutrition/<dag> #}
+          <input
+            type="date"
+            name="day"
+            value="{{ day }}"
+            onchange="window.location='{{ url_for('nutrition.nutrition_day', day='__DAY__') }}'.replace('__DAY__', this.value)"
+          >
+        </div>
+      </div>
+    </div>
+
+    <hr style="margin: 16px 0; opacity: .25;">
+
+    <div class="grid" style="grid-template-columns: 1.2fr .8fr; gap: 12px;">
+
+      <!--
+        Samenvatting:
+        - totals komt uit de backend (kcal/protein/carbs/fat opgeteld voor deze dag)
+        - remaining is het verschil t.o.v. kcal_target
+      -->
+      <div>
+        <h2>Samenvatting</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Vandaag</th>
+              <th>Doel</th>
+              <th>Resterend</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Kcal</strong></td>
+              <td>{{ totals.kcal }}</td>
+              <td>{{ kcal_target }}</td>
+              <td>
+                <!--
+                  Visuele feedback:
+                  - Als remaining negatief is, wordt het rood (over je doel heen)
+                -->
+                {% if remaining >= 0 %}
+                  {{ remaining }}
+                {% else %}
+                  <span style="color: var(--danger);">{{ remaining }}</span>
+                {% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Snelle macro-kaartjes -->
+        <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px;">
+          <div class="card" style="padding: 12px;">
+            <p class="muted" style="margin: 0;">Eiwit</p>
+            <p style="margin: 6px 0 0 0; font-size: 18px;"><strong>{{ totals.protein }}</strong> g</p>
+          </div>
+
+          <div class="card" style="padding: 12px;">
+            <p class="muted" style="margin: 0;">Koolhydraten</p>
+            <p style="margin: 6px 0 0 0; font-size: 18px;"><strong>{{ totals.carbs }}</strong> g</p>
+          </div>
+
+          <div class="card" style="padding: 12px;">
+            <p class="muted" style="margin: 0;">Vet</p>
+            <p style="margin: 6px 0 0 0; font-size: 18px;"><strong>{{ totals.fat }}</strong> g</p>
+          </div>
+
+          <div class="card" style="padding: 12px;">
+            <p class="muted" style="margin: 0;">Nog over</p>
+            <p style="margin: 6px 0 0 0; font-size: 18px;">
+              <strong {% if remaining < 0 %}style="color: var(--danger);"{% endif %}>{{ remaining }}</strong> kcal
+            </p>
+          </div>
+        </div>
+      </div>
+
+       <!--
+        Caloriedoel aanpassen:
+        - Dit formulier past het kcal-doel aan voor het account
+        - next zorgt dat je na opslaan terugkomt op dezelfde dagpagina
+      -->
+      <div class="card" style="padding: 12px;">
+        <h2 style="margin-top: 0;">Caloriedoel aanpassen</h2>
+        <p class="muted" style="margin-top: -6px;">Dit geldt voor alle dagen (per account).</p>
+
+        <form method="post" action="{{ url_for('nutrition.set_kcal_target') }}">
+          {# Na opslaan terug naar dezelfde dag #}
+          <input type="hidden" name="next" value="{{ url_for('nutrition.nutrition_day', day=day) }}">
+
+          <label>Caloriedoel (kcal)</label>
+          <!--
+            HTML5 basisvalidatie:
+            - min/step helpt om onrealistische waarden te voorkomen
+          -->
+          <input
+            type="number"
+            name="kcal_target"
+            min="500"
+            step="10"
+            value="{% if kcal_target and kcal_target > 0 %}{{ kcal_target }}{% endif %}"
+            placeholder="Bijv. 2450"
+            required
+          >
+
+          <div class="actions" style="margin-top: 10px;">
+            <button class="btn primary" type="submit">Opslaan</button>
+            <a class="btn" href="{{ url_for('nutrition.food_search') }}">Voeding toevoegen</a>
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+    <hr style="margin: 16px 0; opacity: .25;">
+
+    <!--
+      Logs van die dag:
+      - logs komt uit de database (per gebruiker + datum)
+      - Loop toont elke logregel in een tabel
+    -->
+    <h2>Wat je hebt toegevoegd</h2>
+
+    {% if logs and logs|length > 0 %}
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Gram</th>
+            <th>Kcal</th>
+            <th>Eiwit</th>
+            <th>Kh</th>
+            <th>Vet</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in logs %}
+            <tr>
+              <td>{{ item.food_name }}</td>
+              <td>{{ item.amount_grams }}</td>
+              <td>{{ item.kcal }}</td>
+              <td>{{ item.protein }}</td>
+              <td>{{ item.carbs }}</td>
+              <td>{{ item.fat }}</td>
+              <td style="text-align:right;">
+                {# Verwijderen gaat via POST (veilig) #}
+                <form method="post" action="{{ url_for('nutrition.food_log_delete', log_id=item.id) }}" style="display:inline;">
+                  <button
+                    class="btn"
+                    type="submit"
+                    onclick="return confirm('Weet je zeker dat je deze log wilt verwijderen?')"
+                  >
+                    Verwijder
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">
+        Nog geen voeding toegevoegd voor deze dag.
+        Ga naar <a href="{{ url_for('nutrition.food_search') }}">Voeding</a> om iets toe te voegen.
+      </p>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}

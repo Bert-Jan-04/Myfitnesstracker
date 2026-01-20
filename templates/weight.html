@@ -1,0 +1,153 @@
+<!--
+    Bronnen:
+    - https://www.chartjs.org/docs/latest/
+    - https://jinja.palletsprojects.com/en/stable/templates/
+    - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input
+  -->
+
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Gewicht</h1>
+<p class="lead">Log je gewicht en bekijk je progressie.</p>
+
+<div class="grid">
+  <!--
+    Gewicht toevoegen:
+    - Formulier om een nieuwe gewichtmeting op te slaan
+    - POST naar dezelfde route (/weight)
+  -->
+  <div class="card">
+    <h2>📌 Gewicht toevoegen</h2>
+
+    {# POST-form: stuurt datum + gewicht naar dezelfde route (/weight) #}
+    <form method="post">
+      <div class="row" style="margin-top: 12px;">
+        <div>
+          <label>Datum</label>
+          <!-- Datumselectie via HTML5 -->
+          <input type="date" name="log_date" required>
+        </div>
+
+        <div>
+          <label>Gewicht (kg)</label>
+          <!-- Nummerinvoer met basisvalidatie -->
+          <input type="number" name="weight" step="0.1" min="0" placeholder="Bijv. 82.4" required>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top: 12px;">
+        <button class="btn primary" type="submit">Opslaan</button>
+      </div>
+    </form>
+  </div>
+
+   <!--
+    Grafiek:
+    - Wordt alleen getoond als er meer dan 1 meting is
+    - Geeft visueel inzicht in de voortgang
+  -->
+  <div class="card">
+    <h2>📈 Progressie</h2>
+
+    {% if logs and logs|length > 1 %}
+      <!-- Vaste hoogte zodat de grafiek netjes blijft -->
+      <div style="height: 260px;">
+        <canvas id="weightChart"></canvas>
+      </div>
+
+      <p class="muted" style="margin-top: 10px;">
+        Tip: log je gewicht steeds op hetzelfde moment van de dag.
+      </p>
+
+    {% elif logs and logs|length == 1 %}
+      <p class="muted">Je hebt 1 meting. Log er nog een paar, dan verschijnt hier een grafiek.</p>
+
+    {% else %}
+      <p class="muted">Nog geen gewicht gelogd. Voeg je eerste meting toe 👆</p>
+    {% endif %}
+  </div>
+</div>
+
+<!--
+  Geschiedenis:
+  - Overzicht van alle gewichtlogs in tabelvorm
+-->
+<div class="card" style="margin-top: 16px;">
+  <h2>🗂️ Geschiedenis</h2>
+
+  {% if logs and logs|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Datum</th>
+          <th>Gewicht</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in logs %}
+          <tr>
+            <td>{{ l["log_date"] }}</td>
+            <!-- Nederlandse weergave van decimalen -->
+            <td>{{ "%.1f"|format(l["weight"])|replace(".", ",") }} kg</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">Nog geen logs.</p>
+  {% endif %}
+</div>
+
+<!--
+  Externe library:
+  - Chart.js via CDN voor het tekenen van grafieken
+-->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{% if logs and logs|length > 1 %}
+<script>
+  // logs komen binnen als: nieuwste -> oudste (DESC).
+  // Voor de grafiek omdraaien: oudste -> nieuwste.
+  const labels = [
+    {% for l in logs|reverse %}
+      "{{ l['log_date'] }}"{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  const dataPoints = [
+    {% for l in logs|reverse %}
+      {{ "%.2f"|format(l['weight']) }}{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  const ctx = document.getElementById("weightChart");
+
+// Simpele lijn-grafiek voor gewichtprogressie
+  new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Gewicht (kg)",
+        data: dataPoints,
+        tension: 0.25,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true } },
+      scales: {
+        y: {
+          title: { display: true, text: "kg" },
+          ticks: { callback: (value) => value + " kg" }
+        }
+      }
+    }
+  });
+</script>
+{% endif %}
+
+{% endblock %}

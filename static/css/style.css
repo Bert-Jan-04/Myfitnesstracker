@@ -1,0 +1,505 @@
+/*
+   BRON / LEIDRAAD
+   - Bij het opzetten van deze basis-styling heb ik deze video als leidraad gebruikt:
+     https://www.youtube.com/watch?v=wRNinF7YQqQ
+   - Ik heb de styling vervolgens zelf aangepast naar mijn eigen ontwerp en project.
+ */
+ 
+/* 
+Bronnen:
+- https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Cascading_variables/Using_custom_properties
+- https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Flexible_box_layout/Basic_concepts
+- https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Grid_layout
+- https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Media_queries/Using
+- https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Transitions/Using
+- https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Animations/Using
+- https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Animations/Using
+- https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/backdrop-filter
+
+
+/*
+   THEME (CSS variabelen)
+   - Hier zet ik alle kleuren/afmetingen op 1 plek
+   - Voordeel: ik kan het hele design aanpassen door alleen :root te wijzigen
+*/
+:root {
+  --bg: #0b0f14;       /* achtergrond (donker) */
+  --panel: #121824;    /* kaart/panel kleur */
+  --panel2: #0f1520;   /* extra panel tint */
+  --text: #e9eef7;     /* standaard tekstkleur */
+  --muted: #a7b2c7;    /* “zachte” tekst (subtitels) */
+  --line: #243049;     /* borders/lijnen */
+  --accent: #4ea1ff;   /* primaire highlight kleur */
+  --success: #3dd68c;  /* succes (groen) */
+  --warning: #ffa94d;  /* waarschuwing (oranje) */
+  --danger: #ff6b6b;   /* fout/negatief (rood) */
+  --radius: 14px;      /* vaste afronding voor cards/inputs */
+}
+
+/*
+   BASE
+*/
+* { box-sizing: border-box; } /* padding/border tellen mee in element-breedte */
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: linear-gradient(180deg, var(--bg), #070a0f); /* zachte gradient */
+  color: var(--text);
+  min-height: 100vh; /* altijd minstens volledige hoogte */
+}
+
+a { color: inherit; text-decoration: none; } /* links nemen de tekstkleur over */
+
+.container {
+  max-width: 1100px;  /* content niet te breed op grote schermen */
+  margin: 0 auto;     /* centreren */
+  padding: 20px;
+}
+
+main { padding: 22px 0 60px; } /* ruimte boven en onder de pagina */
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+
+  /* Gradient tekst-effect (netjes modern) */
+  background: linear-gradient(135deg, var(--text), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+p.lead {
+  margin: 0 0 24px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/*
+   HEADER / NAV
+*/
+header {
+  position: sticky; /* blijft bovenaan tijdens scrollen */
+  top: 0;
+  backdrop-filter: blur(10px); /* glas-effect */
+  background: rgba(11, 15, 20, 0.85);
+  border-bottom: 1px solid var(--line);
+  z-index: 10; /* boven cards blijven */
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  font-size: 18px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px; /* perfecte cirkel */
+  background: var(--accent);
+  box-shadow: 0 0 18px rgba(78, 161, 255, 0.5);
+  animation: pulse 2s ease-in-out infinite; /* subtiele animatie */
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;   /* als het niet past, naar volgende regel */
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.navlink {
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 14px;
+  transition: all 0.2s ease; /* hover voelt “smooth” */
+}
+
+.navlink:hover {
+  color: var(--text);
+  border-color: var(--line);
+  background: rgba(18, 24, 36, 0.5);
+  transform: translateY(-1px);
+}
+
+.navlink.active {
+  color: var(--accent); /* active link zichtbaar */
+  border-color: rgba(78, 161, 255, 0.3);
+  background: rgba(78, 161, 255, 0.08);
+}
+
+.account {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-left: 12px;
+  margin-left: 12px;
+  border-left: 1px solid var(--line);
+}
+
+.pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(78, 161, 255, 0.12);
+  border: 1px solid rgba(78, 161, 255, 0.25);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+
+  /* lang e-mail adres netjes afkappen */
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+   LAYOUT GRIDS
+*/
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr; /* linkerkolom breder */
+  gap: 16px;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Responsiveness: onder 900px alles onder elkaar */
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+  .split { grid-template-columns: 1fr; }
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* forms in 2 kolommen */
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 700px) {
+  .row { grid-template-columns: 1fr; }
+}
+
+/*
+   CARDS
+   - Herbruikbare "paneel" stijl voor elke sectie
+*/
+.card {
+  background: linear-gradient(180deg, rgba(18, 24, 36, 0.95), rgba(15, 21, 32, 0.95));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+}
+
+.card h2 {
+  margin: 0 0 16px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: var(--text);
+}
+
+/*
+   KPIs (de blokken op het dashboard)
+*/
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* past automatisch */
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.kpi {
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
+}
+
+.kpi:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.kpi .label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpi .value {
+  font-size: 28px;
+  font-weight: 800;
+  margin-top: 6px;
+}
+
+.kpi.success .value { color: var(--success); }
+.kpi.warning .value { color: var(--warning); }
+
+/*
+   FORMS
+*/
+label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(8, 12, 18, 0.65);
+  color: var(--text);
+  outline: none;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent); /* focus duidelijk zichtbaar */
+  background: rgba(8, 12, 18, 0.85);
+  box-shadow: 0 0 0 3px rgba(78, 161, 255, 0.1);
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical; /* gebruiker mag groter maken */
+  font-family: inherit;
+}
+
+/*
+   BUTTONS / ACTIONS
+*/
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap; /* knoppen mogen afbreken op kleine schermen */
+  margin-top: 16px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Variants voor knoppen */
+.btn.primary {
+  border-color: rgba(78, 161, 255, 0.35);
+  background: rgba(78, 161, 255, 0.15);
+  color: var(--accent);
+}
+
+.btn.primary:hover { background: rgba(78, 161, 255, 0.25); }
+
+.btn.success {
+  border-color: rgba(61, 214, 140, 0.35);
+  background: rgba(61, 214, 140, 0.15);
+  color: var(--success);
+}
+
+.btn.danger {
+  border-color: rgba(255, 107, 107, 0.35);
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--danger);
+}
+
+/*
+   TABLES
+*/
+table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+th, td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+  font-size: 14px;
+}
+
+th {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+tr:last-child td { border-bottom: none; }
+
+tbody tr { transition: background 0.2s ease; }
+tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+/*
+   BADGES / HELPERS
+*/
+.stat-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(78, 161, 255, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(78, 161, 255, 0.3);
+}
+
+.stat-badge.success {
+  background: rgba(61, 214, 140, 0.15);
+  color: var(--success);
+  border-color: rgba(61, 214, 140, 0.3);
+}
+
+/* (Deze list gebruik je bijv. voor oefenlijstjes) */
+.exercise-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+
+.exercise-list li {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.exercise-list li:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.hint {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(78, 161, 255, 0.10);
+  border: 1px solid rgba(78, 161, 255, 0.25);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Flash / meldingen (handig in meerdere pagina’s) */
+.flash {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+}
+
+/*
+   FOOTER
+*/
+footer {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  padding: 24px 20px;
+  max-width: 1100px;
+  margin: 40px auto 0;
+  font-size: 13px;
+  text-align: center;
+}
+
+/*
+   RESPONSIVE HEADER TWEAK
+*/
+@media (max-width: 600px) {
+  h1 { font-size: 24px; }
+  .brand { font-size: 16px; }
+
+  /* Menu onder elkaar op mobiel */
+  nav { flex-direction: column; width: 100%; }
+
+  .account {
+    border-left: none;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+    margin-top: 8px;
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,105 @@
+<!--
+  - Ik heb al veel ervaring met HTML vanuit mijn werk (o.a. websites en landingspagina’s),
+    waardoor het opzetten van de HTML-structuur mij goed afging.
+  - Nieuw voor mij in dit project was het werken met Jinja-templates om pagina’s
+    dynamisch te maken binnen Flask.
+  - Hiervoor heb ik onderstaande video als leidraad gebruikt en dit vervolgens zelf
+    toegepast binnen mijn eigen projectstructuur:
+    Bron (Jinja templating):
+    https://www.youtube.com/watch?v=4yaG-jFfePc
+  - De template is bewust eenvoudig gehouden en dient als basislayout
+    voor alle pagina’s in de applicatie.
+-->
+
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+   <!-- Zorgt dat de website goed schaalt op mobiel -->
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Dynamische paginatitel via Jinja -->
+  <title>{{ title or "MyFitnessTracker" }}</title>
+
+<!-- Centrale CSS die op alle pagina’s wordt gebruikt -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+<header>
+  <div class="topbar">
+	  <!-- Logo / merknaam, klikbaar naar dashboard -->
+    <a class="brand" href="{{ url_for('dashboard.home') }}">
+      <span class="dot"></span>
+      <span>FitTrack</span>
+    </a>
+
+    <nav>
+		<!--
+        Navigatie:
+        - url_for zorgt ervoor dat links altijd correct blijven
+        - request.path wordt gebruikt om de actieve pagina te highlighten
+      -->
+      <a class="navlink {% if request.path == '/' %}active{% endif %}"
+         href="{{ url_for('dashboard.home') }}">Dashboard</a>
+
+      <a class="navlink {% if request.path.startswith('/workouts') %}active{% endif %}"
+         href="{{ url_for('workouts.workouts') }}">Workouts</a>
+
+      <a class="navlink {% if request.path.startswith('/weight') %}active{% endif %}"
+         href="{{ url_for('weight.weight') }}">Gewicht</a>
+
+      <a class="navlink {% if request.path.startswith('/food') or request.path.startswith('/nutrition') %}active{% endif %}"
+         href="{{ url_for('nutrition.food_search') }}">Voeding</a>
+
+      <a class="navlink {% if request.path.startswith('/calculator') %}active{% endif %}"
+         href="{{ url_for('calculator.calculator') }}">Calculator</a>
+
+      <a class="navlink {% if request.path.startswith('/recipes') %}active{% endif %}"
+         href="{{ url_for('recipes.recipes') }}">Recepten</a>
+
+      <div class="account">
+        {% if session.get("user_id") %}
+          <span class="pill">{{ session.get("user_email") }}</span>
+          <a class="navlink" href="{{ url_for('auth.logout') }}">Uitloggen</a>
+        {% else %}
+          <a class="navlink {% if request.path == '/login' %}active{% endif %}"
+             href="{{ url_for('auth.login') }}">Inloggen</a>
+          <a class="navlink {% if request.path == '/register' %}active{% endif %}"
+             href="{{ url_for('auth.register') }}">Registreren</a>
+        {% endif %}
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+	 <!--
+    Flash messages:
+    - Worden gebruikt om feedback te tonen na acties
+      (bijv. inloggen, opslaan, foutmelding)
+  -->
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <div class="card" style="margin-bottom: 16px;">
+        {% for msg in messages %}
+          <p class="muted" style="margin: 0;">{{ msg }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  
+  <!--
+    Content block:
+    - Hier wordt per pagina de unieke inhoud ingevoegd
+    - Alle andere templates erven van base.html
+  -->
+
+  {% block content %}{% endblock %}
+</main>
+
+<footer>
+	<!-- Eenvoudige footer, consistent op alle pagina’s -->
+  <div class="muted">© 2026 MyFitnessTracker</div>
+</footer>
+</body>
+</html>

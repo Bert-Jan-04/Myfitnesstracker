@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Registreren</h1>
+<p class="lead">Maak een account aan om je voeding, workouts en gewicht te loggen.</p>
+
+<!--
+  Registratieformulier:
+  - Compact gehouden voor duidelijkheid
+  - max-width zorgt voor een prettige leesbreedte
+  - https://flask.palletsprojects.com/en/stable/tutorial/views/
+-->
+<div class="card" style="max-width: 520px;">
+  <form method="post">
+    <label>E-mail</label>
+    <input name="email" type="email" placeholder="jouw@email.com" required>
+
+    <div style="margin-top: 12px;">
+      <label>Wachtwoord</label>
+       <!--
+        type="password":
+        - Invoer wordt verborgen
+        - Minimale lengte wordt in de backend gecontroleerd
+      -->
+      <input name="password" type="password" placeholder="minimaal 8 tekens" required>
+    </div>
+
+    <div class="actions">
+      <button class="btn success" type="submit">Account aanmaken</button>
+      <!-- Link terug naar loginpagina -->
+      <a class="btn" href="{{ url_for('auth.login') }}">Terug naar login</a>
+    </div>
+
+ <!-- Extra navigatie voor bestaande gebruikers -->
+    <p style="margin: 14px 0 0; color: var(--muted); font-size: 13px;">
+      Al een account?
+      <a href="{{ url_for('auth.login') }}" style="color: var(--accent);">
+        Log hier in
+      </a>.
+    </p>
+  </form>
+</div>
+
+{% endblock %}

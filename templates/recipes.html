@@ -1,0 +1,107 @@
+<!--
+  Bronnen:
+  - https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Sending_and_retrieving_form_data
+-->
+
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Recepten</h1>
+<p class="lead">Zoek recepten en laat je inspireren.</p>
+
+<!--
+  Zoekformulier:
+  - Gebruikt GET zodat de zoekterm in de URL staat
+  - Handig om te herladen of te delen
+-->
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" action="{{ url_for('recipes.recipes') }}">
+    <label>Zoek op naam</label>
+
+    <div class="row">
+      <div>
+        <input
+          name="q"
+          value="{{ q }}"
+          placeholder="Bijv. chicken, pasta, curry..."
+          required
+        >
+      </div>
+
+      <div class="actions" style="margin-top:0;">
+        <button class="btn primary" type="submit">Zoeken</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!--
+  Resultaten:
+  - meals komt uit de backend (API-response)
+  - Drie situatoes:
+    1. Zoekterm + resultaten → tabel tonen
+    2. Zoekterm maar geen resultaten → melding
+    3. Geen zoekterm → instructietekst
+-->
+<div class="card">
+  <h2>Resultaten</h2>
+
+  {% if q and meals and meals|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Recept</th>
+          <th>Info</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in meals %}
+          <tr>
+            <td style="display:flex; align-items:center; gap:10px;">
+              <!--
+                Thumbnail:
+                - Alleen tonen als de API een afbeelding teruggeeft
+                - Verbetert de visuele herkenning van het recept
+              -->
+              {% if m["strMealThumb"] %}
+                <img
+                  src="{{ m['strMealThumb'] }}"
+                  alt="{{ m['strMeal'] }}"
+                  style="width:48px;height:48px;border-radius:10px;object-fit:cover;"
+                >
+              {% endif %}
+
+              <div>{{ m["strMeal"] }}</div>
+            </td>
+ <!-- Extra info uit de API (categorie & land/regio) -->
+            <td class="muted">
+              {{ m["strCategory"] or "-" }} • {{ m["strArea"] or "-" }}
+            </td>
+
+<!-- Link naar detailpagina van het recept -->
+            <td style="text-align:right;">
+              <a class="btn" href="{{ url_for('recipes.recipe_detail', meal_id=m['idMeal']) }}">
+                Open →
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  {% elif q %}
+   <!-- Zoekterm ingevuld maar geen resultaten -->
+    <p class="muted" style="margin:0;">
+      Geen recepten gevonden voor “{{ q }}”.
+    </p>
+
+  {% else %}
+   <!-- Pagina geladen zonder zoekterm -->
+    <p class="muted" style="margin:0;">
+      Zoek hierboven om recepten te zien.
+    </p>
+  {% endif %}
+</div>
+
+{% endblock %}

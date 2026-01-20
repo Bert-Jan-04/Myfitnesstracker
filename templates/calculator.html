@@ -1,0 +1,152 @@
+<!--
+    Bronnen:
+    - https://jinja.palletsprojects.com/en/stable/templates/#list-of-control-structures
+    - https://flask.palletsprojects.com/en/stable/blueprints/
+    - https://developer.mozilla.org/en-US/docs/Web/HTML/Guides/Constraint_validation
+    - https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/HTML_table_basics
+  -->
+
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Caloriecalculator</h1>
+<p class="lead">
+  Bereken je onderhoud (TDEE) en je doelcalorieën op basis van je gegevens.
+</p>
+
+<div class="grid">
+	
+	<!--
+    Linkerkant:
+    - Formulier waarin de gebruiker persoonlijke gegevens invult
+    - POST-request naar de calculator-route binnen de calculator blueprint
+  -->
+
+  <div class="card">
+    <h2>📌 Jouw gegevens</h2>
+
+    {# POST naar de calculator-route binnen de calculator blueprint #}
+    <form method="post" action="{{ url_for('calculator.calculator') }}">
+
+      <div class="row">
+        <div>
+          <label>Geslacht</label>
+            <!--
+            Selectie met vooraf ingevulde waarde
+            op basis van opgeslagen profielgegevens
+          -->
+          <select name="sex" required>
+            <option value="male" {% if profile and profile.sex == "male" %}selected{% endif %}>Man</option>
+            <option value="female" {% if profile and profile.sex == "female" %}selected{% endif %}>Vrouw</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Geboortejaar</label>
+          <!--
+            Nummerinput met grenzen om onrealistische invoer te voorkomen
+          -->
+          <input type="number" name="birth_year" min="1900" max="2026"
+                 value="{{ profile.birth_year if profile else '' }}" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Lengte (cm)</label>
+          <input type="number" name="height_cm" min="100" max="250" step="0.1"
+                 value="{{ profile.height_cm if profile else '' }}" required>
+        </div>
+
+        <div>
+          <label>Gewicht (kg)</label>
+          <!--
+            Gewicht wordt automatisch ingevuld met het
+            laatst gelogde gewicht indien beschikbaar
+          -->
+          <input type="number" name="weight_kg" min="20" max="300" step="0.1"
+                 value="{{ weight_kg if weight_kg else '' }}" required>
+          <div class="hint">Laatste gelogde gewicht wordt automatisch ingevuld.</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Activiteitsniveau</label>
+          <!--
+            Dynamische dropdown:
+            - opties worden gegenereerd vanuit de database
+            - geselecteerde waarde wordt onthouden via profiel
+          -->
+          <select name="activity_level_id" required>
+            {% for a in activity_levels %}
+              <option value="{{ a.id }}"
+                {% if profile and profile.activity_level_id == a.id %}selected{% endif %}>
+                {{ a.name }} (× {{ a.multiplier }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label>Doel</label>
+          <select name="goal_id" required>
+            {% for g in goals %}
+              <option value="{{ g.id }}"
+                {% if profile and profile.goal_id == g.id %}selected{% endif %}>
+                {{ g.name }} ({{ g.kcal_adjustment }} kcal)
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="submit">Bereken</button>
+        <a class="btn" href="{{ url_for('dashboard.home') }}">Terug naar dashboard</a>
+      </div>
+    </form>
+  </div>
+  
+  <!--
+    Rechterkant:
+    - Resultaten van de berekening
+    - Wordt alleen getoond als er een resultaat beschikbaar is
+  -->
+
+  <div class="card">
+    <h2>📊 Resultaat</h2>
+
+    {% if result %}
+    <!-- Resultaten overzichtelijk weergegeven in tabelvorm -->
+      <table>
+        <tbody>
+          <tr><td><strong>BMR</strong></td><td>{{ "%.0f"|format(result.bmr) }} kcal</td></tr>
+          <tr><td><strong>Onderhoud (TDEE)</strong></td><td>{{ "%.0f"|format(result.tdee) }} kcal</td></tr>
+          <tr><td><strong>Doel</strong></td><td>{{ "%.0f"|format(result.target) }} kcal</td></tr>
+        </tbody>
+      </table>
+
+      <p class="muted">
+        BMR = rustverbranding · TDEE = BMR × activiteit · Doel = TDEE + gekozen doel
+      </p>
+
+      <!--
+        Opslaan van het berekende calorie-doel
+        via een aparte POST-route binnen dezelfde blueprint
+      -->
+      <form method="post" action="{{ url_for('calculator.calculator_save') }}">
+        <input type="hidden" name="kcal_target" value="{{ result.target }}">
+        <div class="actions">
+          <button class="btn primary" type="submit">Opslaan als mijn kcal-doel</button>
+          <a class="btn" href="{{ url_for('nutrition.nutrition_today') }}">Naar dagoverzicht</a>
+        </div>
+      </form>
+    {% else %}
+      <p class="muted">Vul je gegevens in en klik op <strong>Bereken</strong>.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

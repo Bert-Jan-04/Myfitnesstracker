@@ -1,0 +1,116 @@
+<!--
+Bronnen:
+- https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/hidden
+- https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms
+- https://jinja.palletsprojects.com/en/stable/templates/
+-->
+
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Voeding</h1>
+<p class="lead">Zoek een product via barcode (Open Food Facts) en voeg het toe aan je dag.</p>
+
+<div class="grid">
+  <div class="card">
+
+    <!--
+      Formulier 1: barcode zoeken
+      - POST naar dezelfde route
+      - Backend bepaalt of er een product of foutmelding wordt teruggestuurd
+    -->
+    <form method="post">
+      <label>Barcode</label>
+      <input name="barcode" placeholder="Bijv. 5449000054227" required>
+
+      <div class="actions">
+        <button class="btn primary" type="submit">Zoek</button>
+        <a class="btn" href="{{ url_for('nutrition.food_search') }}">Reset</a>
+        <a class="btn" href="{{ url_for('nutrition.nutrition_today') }}">Dagoverzicht (vandaag)</a>
+      </div>
+    </form>
+
+     <!--
+      Foutmelding:
+      - Wordt alleen getoond als de backend een error terugstuurt
+      - Bijvoorbeeld bij ongeldige barcode of onbekend product
+    -->
+    {% if error %}
+      <div class="hint" style="border-color: rgba(255,107,107,0.35); background: rgba(255,107,107,0.10); color: var(--danger);">
+        {{ error }}
+      </div>
+    {% endif %}
+
+     <!--
+      Product gevonden:
+      - Voedingswaarden per 100 gram
+      - Data komt uit de Open Food Facts API
+    -->
+    {% if product %}
+      <h2 style="margin-top: 18px;">{{ product.name }}</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Per 100g</th>
+            <th>Waarde</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Kcal</td><td>{{ product.kcal_100g }}</td></tr>
+          <tr><td>Vet</td><td>{{ product.fat_100g }}</td></tr>
+          <tr><td>Koolhydraten</td><td>{{ product.carbs_100g }}</td></tr>
+          <tr><td>Eiwit</td><td>{{ product.protein_100g }}</td></tr>
+        </tbody>
+      </table>
+
+      <hr style="margin: 18px 0; opacity: .25;">
+
+      <h3>Toevoegen aan dag</h3>
+
+      <!--
+        Formulier 2: product toevoegen aan dag
+        - POST naar aparte route binnen nutrition blueprint
+        - Productdata wordt als snapshot opgeslagen (hidden inputs)
+      -->
+      <form method="post" action="{{ url_for('nutrition.food_log') }}">
+
+        {# Product info (snapshot) - meegeven via hidden inputs #}
+        <input type="hidden" name="api_source" value="openfoodfacts">
+        <input type="hidden" name="api_id" value="{{ product.api_id }}">
+        <input type="hidden" name="name" value="{{ product.name }}">
+
+        {# Waarden per 100g - app rekent dit om naar jouw grams #}
+        <input type="hidden" name="kcal_per_100" value="{{ product.kcal_100g }}">
+        <input type="hidden" name="fat_per_100" value="{{ product.fat_100g }}">
+        <input type="hidden" name="carbs_per_100" value="{{ product.carbs_100g }}">
+        <input type="hidden" name="protein_per_100" value="{{ product.protein_100g }}">
+
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label>Hoeveel gram?</label>
+            <!-- Basisvalidatie via HTML5 -->
+            <input type="number" name="grams" min="1" step="1" value="100" required>
+          </div>
+
+          <div>
+            <label>Datum</label>
+            <input type="date" name="log_date" value="{{ today }}" required>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top: 12px;">
+          <button class="btn primary" type="submit">Toevoegen</button>
+          <a class="btn" href="{{ url_for('nutrition.nutrition_day', day=today) }}">Bekijk dag ({{ today }})</a>
+        </div>
+
+        <p class="muted" style="margin-top: 10px;">
+          💡 De app rekent kcal & macro’s uit op basis van jouw grams en slaat het op voor die dag.
+        </p>
+      </form>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+
+{# Terugknop: als er een zoekterm (q) was, nemen we die mee #}
+<div class="actions" style="margin-top: 0; margin-bottom: 12px;">
+	<!--
+    Terug naar recepten:
+    - Als er een zoekterm was, blijft die behouden (q)
+    - Zo blijft de gebruikersflow logisch (je komt terug in je zoekresultaten)
+  -->
+  <a class="btn" href="{{ url_for('recipes.recipes', q=q) if q else url_for('recipes.recipes') }}">
+    ← Terug naar recepten
+  </a>
+</div>
+
+<!--
+  Detailweergave van recept:
+  - meal komt uit de backend (API-response)
+  - Bij geen resultaat tonen we een nette fallback (recept niet gevonden)
+-->
+{% if meal %}
+  <h1>{{ meal["strMeal"] }}</h1>
+
+  <p class="lead">
+    <span class="stat-badge">{{ meal["strCategory"] or "Onbekend" }}</span>
+    &nbsp;•&nbsp;
+    <span class="stat-badge">{{ meal["strArea"] or "Onbekend" }}</span>
+  </p>
+
+<!-- Afbeelding alleen tonen als er een thumbnail is -->
+  {% if meal["strMealThumb"] %}
+    <div class="card" style="margin-bottom:16px;">
+		<!-- https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/img -->
+      <img
+        src="{{ meal['strMealThumb'] }}" 
+        alt="{{ meal['strMeal'] }}"
+        style="width:100%; max-height:360px; object-fit:cover; border-radius:14px;"
+      >
+    </div>
+  {% endif %}
+
+  <div class="grid">
+    <div class="card">
+      <h2>🧾 Ingrediënten</h2>
+<!--
+        Ingrediënten lijst:
+        - TheMealDB levert ingrediënten in velden strIngredient1..20 en strMeasure1..20
+        - Daarom loop ik van 1 t/m 20 en check ik of een veld gevuld is
+      -->
+      <ul style="margin:0; padding-left:18px;">
+        {% for i in range(1, 21) %}
+          {% set ing = meal["strIngredient" ~ i] %}
+          {% set meas = meal["strMeasure" ~ i] %}
+          {% if ing and ing|trim != "" %}
+            <li>
+              {% if meas and meas|trim != "" %}
+                {{ meas|trim }} —
+              {% endif %}
+              {{ ing|trim }}
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>👨‍🍳 Bereiding</h2>
+
+      {% if meal["strInstructions"] %}
+        <p style="white-space:pre-line; margin:0;">{{ meal["strInstructions"] }}</p>
+      {% else %}
+        <p class="muted" style="margin:0;">Geen instructies beschikbaar.</p>
+      {% endif %}
+
+<!-- Externe links alleen tonen als ze bestaan (API kan leeg zijn) -->
+      <div class="actions" style="margin-top: 16px;">
+        {% if meal["strYoutube"] %}
+          <a class="btn primary" href="{{ meal['strYoutube'] }}" target="_blank" rel="noopener">
+            YouTube video →
+          </a>
+        {% endif %}
+
+        {% if meal["strSource"] %}
+          <a class="btn" href="{{ meal['strSource'] }}" target="_blank" rel="noopener">
+            Bron →
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+{% else %}
+<!-- Fallback als de API niets teruggeeft -->
+  <h1>Recept niet gevonden</h1>
+  <p class="muted">Dit recept bestaat niet (meer) of de API gaf geen resultaat terug.</p>
+  <div class="actions">
+    <a class="btn primary" href="{{ url_for('recipes.recipes') }}">Terug</a>
+  </div>
+{% endif %}
+
+{% endblock %}

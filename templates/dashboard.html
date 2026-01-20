@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block content %}
+
+  <h1>Dashboard</h1>
+  <p class="lead">Jouw overzicht van vandaag</p>
+
+  <div class="kpis">
+
+    <!--
+      KPI 1: Calorieën vandaag
+      - Toont progressie alleen als er een kcal-doel is ingesteld
+      - pct wordt in Jinja berekend en begrensd (0 t/m 100) voor de balk
+    -->
+    <div class="kpi">
+      <div class="label">Calorieën vandaag</div>
+
+      {# Toon voortgang alleen als er een kcal-doel is #}
+      {% if kcal_target and kcal_target > 0 %}
+
+        {# Bereken percentage voor de voortgangsbalk #}
+        {% set pct = (kcal_today / kcal_target * 100) if kcal_target > 0 else 0 %}
+        {% if pct < 0 %}{% set pct = 0 %}{% endif %}
+        {% if pct > 100 %}{% set pct = 100 %}{% endif %}
+
+        <div class="value">
+          {{ "%.0f"|format(kcal_today) }} / {{ "%.0f"|format(kcal_target) }} kcal
+        </div>
+
+        <div class="muted">
+          Nog over: {{ "%.0f"|format(kcal_remaining) }} kcal
+        </div>
+
+        <!-- Visuele voortgangsbalk -->
+        <div style="margin-top: 10px;">
+          <div style="height: 10px; border-radius: 999px; background: rgba(255,255,255,0.10); overflow:hidden;">
+            <div style="height: 10px; width: {{ pct }}%; background: rgba(123, 239, 178, 0.85);"></div>
+          </div>
+
+          <div class="muted" style="margin-top: 8px;">
+            <a href="{{ url_for('nutrition.nutrition_day', day=today) }}">Bekijk dagoverzicht →</a>
+          </div>
+        </div>
+
+      {% else %}
+        <div class="value">—</div>
+        <div class="muted">Stel eerst je kcal-doel in (dan zie je hier je voortgang).</div>
+
+         <!--
+          Formulier om kcal-doel op te slaan
+          - POST naar een route die het doel opslaat in het account/profiel
+          - next zorgt dat je na opslaan weer terugkomt op het dashboard
+        -->
+        <form method="post" action="{{ url_for('nutrition.set_kcal_target') }}" style="margin-top: 10px;">
+          <label>Stel kcal-doel in</label>
+
+          <!-- Nummer-invoer met basisvalidatie -->
+          <input
+            type="number"
+            name="kcal_target"
+            min="500"
+            step="10"
+            placeholder="Bijv. 2450"
+            required
+          >
+
+          <!-- Terugsturen naar dashboard -->
+          <input type="hidden" name="next" value="{{ url_for('dashboard.home') }}">
+
+          <div class="actions" style="margin-top: 10px;">
+            <button class="btn primary" type="submit">Opslaan</button>
+            <a class="btn" href="{{ url_for('nutrition.food_search') }}">Voeding toevoegen</a>
+          </div>
+        </form>
+      {% endif %}
+    </div>
+
+    <!--
+      KPI 2: Laatste gewicht
+      - Wordt alleen gevuld als er minimaal 1 gewichtmeting bestaat
+      - replace(".", ",") is voor Nederlandse weergave van decimalen
+    -->
+    <div class="kpi success">
+      <div class="label">Huidig gewicht</div>
+
+      <div class="value">
+        {# Toon gewicht alleen als er een meting is #}
+        {% if latest_weight %}
+          {{ "%.1f"|format(latest_weight["weight"])|replace(".", ",") }} kg
+        {% else %}
+          —
+        {% endif %}
+      </div>
+
+      <div class="muted">
+        {% if latest_weight %}
+          Laatste log: {{ latest_weight["log_date"] }}
+        {% else %}
+          Nog geen gewicht gelogd
+        {% endif %}
+      </div>
+    </div>
+
+     <!--
+      KPI 3: Workouts deze week
+      - workouts_this_week wordt in de backend berekend (per user)
+      - Op de frontend alleen tonen als overzicht
+    -->
+    <div class="kpi warning">
+      <div class="label">Workouts deze week</div>
+      <div class="value">{{ workouts_this_week }} / 4</div>
+      <div class="muted">Vanaf maandag (per account)</div>
+    </div>
+
+  </div>
+
+    <!--
+    Recente workouts
+    - Tabel wordt dynamisch gevuld met recent_workouts (uit de database)
+    - Elke rij is klikbaar naar de detailpagina van de workout
+  -->
+  <div class="card">
+    <h2>📊 Recente activiteit</h2>
+
+    {% if recent_workouts and recent_workouts|length > 0 %}
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Type</th>
+            <th>Notities</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for w in recent_workouts %}
+            <!-- Klikbare rij naar detailpagina -->
+            <tr
+              style="cursor:pointer;"
+              onclick="window.location='{{ url_for('workouts.workout_detail', workout_id=w['id']) }}'">
+              <td>{{ w["workout_date"] }}</td>
+              <td><span class="stat-badge">{{ w["workout_type"] }}</span></td>
+              <td>{{ w["notes"] or "" }}</td>
+              <td class="muted" style="text-align:right;">Open →</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted" style="margin:0;">Nog geen workouts. Maak je eerste workout aan 👇</p>
+    {% endif %}
+
+    <div class="actions">
+      <a class="btn primary" href="{{ url_for('workouts.workouts') }}">+ Nieuwe workout</a>
+      <a class="btn" href="{{ url_for('workouts.workouts') }}">Alle workouts</a>
+    </div>
+  </div>
+
+  <!--
+    Gewicht grafiek
+    - Alleen tonen als er voldoende metingen zijn (meer dan 1)
+    - Chart.js gebruikt een canvas element om te tekenen
+  -->
+  <div class="card">
+    <h2>📈 Gewicht progressie</h2>
+
+    {% if weight_logs and weight_logs|length > 1 %}
+      <div style="height: 240px;">
+        <canvas id="weightChartDashboard"></canvas>
+      </div>
+
+      <div class="muted" style="margin-top: 10px;">
+        <a href="{{ url_for('weight.weight') }}">Naar gewicht pagina →</a>
+      </div>
+
+    {% elif weight_logs and weight_logs|length == 1 %}
+      <p class="muted">Je hebt 1 meting. Log er nog een paar, dan verschijnt hier een grafiek.</p>
+      <div class="actions" style="margin-top: 10px;">
+        <a class="btn primary" href="{{ url_for('weight.weight') }}">Gewicht loggen</a>
+      </div>
+
+    {% else %}
+      <p class="muted">Nog geen gewicht logs. Voeg je eerste meting toe.</p>
+      <div class="actions" style="margin-top: 10px;">
+        <a class="btn primary" href="{{ url_for('weight.weight') }}">Gewicht loggen</a>
+      </div>
+    {% endif %}
+  </div>
+
+ <!--
+    Externe library:
+    - Chart.js wordt via CDN geladen om grafieken te kunnen tekenen
+    Bron:
+    https://www.chartjs.org/docs/latest/getting-started/
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  {% if weight_logs and weight_logs|length > 1 %}
+  <script>
+    // Datums voor de x-as (oud → nieuw)
+    const labelsDash = [
+      {% for l in weight_logs|reverse %}
+        "{{ l['log_date'] }}"{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    // Gewicht in kg voor de y-as
+    const dataDash = [
+      {% for l in weight_logs|reverse %}
+        {{ "%.2f"|format(l['weight']) }}{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    const ctxDash = document.getElementById("weightChartDashboard");
+
+// Simpele lijn-grafiek voor progressie (dashboard overzicht)
+    new Chart(ctxDash, {
+      type: "line",
+      data: {
+        labels: labelsDash,
+        datasets: [{
+          label: "Gewicht (kg)",
+          data: dataDash,
+          tension: 0.25,
+          fill: false
+        }]
+      }
+    });
+  </script>
+  {% endif %}
+
+{% endblock %}

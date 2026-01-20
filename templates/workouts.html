@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Workouts</h1>
+<p class="lead">Maak een workout aan en voeg daarna meerdere oefeningen toe.</p>
+
+<div class="grid">
+
+  <!--
+    Nieuwe workout:
+    - Formulier om een workout op te slaan
+    - POST naar dezelfde route (/workouts)
+  -->
+  <div class="card">
+    <h2>➕ Nieuwe workout</h2>
+
+    {# POST naar dezelfde route (/workouts) die de workout opslaat #}
+    <form method="post" action="{{ url_for('workouts.workouts') }}">
+      <div class="row">
+        <div>
+          <label>Datum</label>
+           <!-- Datumselectie via HTML5 -->
+          <input name="workout_date" type="date" required>
+        </div>
+
+        <div>
+          <label>Type</label>
+          <!-- Vast aantal types voor consistente data -->
+          <select name="workout_type" required>
+            <option value="Kracht" selected>Kracht</option>
+            <option value="Cardio">Cardio</option>
+            <option value="HYROX">HYROX</option>
+            <option value="Mobiliteit">Mobiliteit</option>
+            <option value="Overig">Overig</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label>Notities (optioneel)</label>
+        <textarea name="notes" placeholder="Bijv. Push dag • focus op borst"></textarea>
+      </div>
+
+      <div class="actions">
+        <button class="btn success" type="submit">Workout aanmaken → oefeningen toevoegen</button>
+      </div>
+    </form>
+
+    <p class="hint" style="margin-bottom:0;">
+      💡 Na het aanmaken ga je automatisch door naar de detailpagina om oefeningen toe te voegen.
+    </p>
+  </div>
+
+  
+  <!--
+    Overzicht recente workouts:
+    - Lijst komt uit de database (per gebruiker)
+    - Klikbare rij opent de detailpagina van de workout
+  -->
+  <div class="card">
+    <h2>📋 Recente workouts</h2>
+
+    {% if recent and recent|length > 0 %}
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Type</th>
+            <th>Notities</th>
+            <th></th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for w in recent %}
+<!-- Klikbare rij: opent workout_detail -->
+            <tr
+              style="cursor:pointer;"
+              onclick="window.location='{{ url_for('workouts.workout_detail', workout_id=w['id']) }}'">
+              <td>{{ w["workout_date"] }}</td>
+              <td><span class="stat-badge">{{ w["workout_type"] }}</span></td>
+              <td>{{ w["notes"] or "" }}</td>
+              <td class="muted" style="text-align:right;">Open →</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted" style="margin:0;">Nog geen workouts. Maak er links één aan 👈</p>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

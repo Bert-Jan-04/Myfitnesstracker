@@ -1,46 +1,44 @@
-from flask import Flask, render_template
-import sqlite3
+# os wordt gebruikt om omgevingsvariabelen (environment variables) uit te lezen.
+# Dit is handig voor gevoelige gegevens zoals een SECRET_KEY,
+# zodat deze niet hard in de code hoeft te staan.
+# Bron: https://www.digitalocean.com/community/tutorials/python-os-module
+
 import os
+from flask import Flask
 
+from db import init_db
+# Hier importeer ik de blueprints (bp) uit verschillende route-bestanden.
+# Een blueprint is een manier om routes te groeperen per onderdeel van de app,
+# bijvoorbeeld dashboard, workouts of authenticatie.
+# Dit maakt de code overzichtelijker en beter onderhoudbaar.
+# Bron: https://flask.palletsprojects.com/en/stable/tutorial/views/
+
+from routes.dashboard import bp as dashboard_bp
+from routes.nutrition import bp as nutrition_bp
+from routes.calculator import bp as calculator_bp
+from routes.weight import bp as weight_bp
+from routes.workouts import bp as workouts_bp
+from routes.recipes import bp as recipes_bp
+from routes.auth_routes import bp as auth_bp
+
+# Aanmaken van de Flask-app
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "database.db")
-SEED_PATH = os.path.join(BASE_DIR, "data", "seed.sql")
-
-
-def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def init_db():
-    """
-    Maakt database.db aan en vult 'm met vaste data via data/seed.sql.
-    Nodig op Render, omdat database.db niet in GitHub staat.
-    """
-    if not os.path.exists(SEED_PATH):
-        return
-
-    conn = sqlite3.connect(DB_PATH)
-    with open(SEED_PATH, "r", encoding="utf-8") as f:
-        conn.executescript(f.read())
-    conn.commit()
-    conn.close()
-
-
-# 1x bij opstarten uitvoeren
+# 1x uitvoeren bij opstarten
 init_db()
 
+# Blueprints registreren
+app.register_blueprint(dashboard_bp)
+app.register_blueprint(nutrition_bp)
+app.register_blueprint(calculator_bp)
+app.register_blueprint(weight_bp)
+app.register_blueprint(workouts_bp)
+app.register_blueprint(recipes_bp)
+app.register_blueprint(auth_bp)
 
-@app.route("/")
-def home():
-    conn = get_db_connection()
-    exercises = conn.execute("SELECT id, name FROM exercises ORDER BY name").fetchall()
-    conn.close()
-    return render_template("fitnesstracker.html", exercises=exercises)
-
-
+# Dit zorgt ervoor dat de Flask-server alleen start
+# wanneer dit bestand direct wordt uitgevoerd.
+# De debug-modus helpt tijdens ontwikkelen door foutmeldingen te tonen.
 if __name__ == "__main__":
     app.run(debug=True)
